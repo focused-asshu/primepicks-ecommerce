@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ECommerceNavbar from '@/components/ecommerce/ecommerce-navbar'
 import HeroCarousel from '@/components/ecommerce/hero-carousel'
 import ProductGrid from '@/components/ecommerce/product-grid'
@@ -68,6 +68,7 @@ export default function ECommercePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const sampleProducts: Product[] = [
     {
@@ -147,9 +148,55 @@ export default function ECommercePage() {
     }
   ]
 
-  useState(() => {
+  useEffect(() => {
+    setMounted(true)
     setFilteredProducts(sampleProducts)
-  })
+    
+    // Create animated particles
+    const createParticles = () => {
+      const container = document.querySelector('.particle-container')
+      if (!container) return
+      
+      for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div')
+        particle.className = 'particle'
+        particle.style.left = Math.random() * 100 + '%'
+        particle.style.animationDelay = Math.random() * 4 + 's'
+        particle.style.animationDuration = (3 + Math.random() * 2) + 's'
+        container.appendChild(particle)
+      }
+    }
+    
+    const timer = setTimeout(createParticles, 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Mouse parallax effect
+  useEffect(() => {
+    if (!mounted) return
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const elements = document.querySelectorAll('.parallax-element')
+      const mouseX = e.clientX
+      const mouseY = e.clientY
+      const centerX = window.innerWidth / 2
+      const centerY = window.innerHeight / 2
+      
+      elements.forEach((element) => {
+        const rect = element.getBoundingClientRect()
+        const elementCenterX = rect.left + rect.width / 2
+        const elementCenterY = rect.top + rect.height / 2
+        
+        const deltaX = (mouseX - elementCenterX) * 0.02
+        const deltaY = (mouseY - elementCenterY) * 0.02
+        
+        ;(element as HTMLElement).style.transform = `translate(${deltaX}px, ${deltaY}px)`
+      })
+    }
+    
+    document.addEventListener('mousemove', handleMouseMove)
+    return () => document.removeEventListener('mousemove', handleMouseMove)
+  }, [mounted])
 
   const handleSearch = (query: string, category?: string) => {
     setSearchQuery(query)
@@ -262,18 +309,21 @@ export default function ECommercePage() {
 
   if (currentView === 'seller') {
     return (
-      <SellerDashboard
-        onNavigate={handleSellerNavigation}
-        onProductAction={handleProductAction}
-        onOrderAction={handleOrderAction}
-        onSettingsChange={handleSettingsChange}
-      />
+      <div className="animate-fade-in-up">
+        <SellerDashboard
+          onNavigate={handleSellerNavigation}
+          onProductAction={handleProductAction}
+          onOrderAction={handleOrderAction}
+          onSettingsChange={handleSettingsChange}
+        />
+      </div>
     )
   }
 
   if (currentView === 'checkout') {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background animate-slide-up">
+        <div className="particle-container"></div>
         <ECommerceNavbar
           onSearchSubmit={handleSearch}
           onCartClick={handleCartClick}
@@ -284,51 +334,61 @@ export default function ECommercePage() {
           isLoggedIn={isLoggedIn}
           userName={userName}
         />
-        <CheckoutFlow
-          cartItems={cartItems}
-          onUpdateQuantity={handleUpdateQuantity}
-          onRemoveItem={handleRemoveItem}
-          onCompleteOrder={handleCompleteOrder}
-        />
+        <div className="animate-scale-in">
+          <CheckoutFlow
+            cartItems={cartItems}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemoveItem={handleRemoveItem}
+            onCompleteOrder={handleCompleteOrder}
+          />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <ECommerceNavbar
-        onSearchSubmit={handleSearch}
-        onCartClick={handleCartClick}
-        onWishlistClick={handleWishlistClick}
-        onAccountClick={handleAccountClick}
-        cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-        wishlistItemCount={wishlistCount}
-        isLoggedIn={isLoggedIn}
-        userName={userName}
-      />
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <div className="particle-container"></div>
       
-      <HeroCarousel />
+      <div className="animate-slide-up">
+        <ECommerceNavbar
+          onSearchSubmit={handleSearch}
+          onCartClick={handleCartClick}
+          onWishlistClick={handleWishlistClick}
+          onAccountClick={handleAccountClick}
+          cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+          wishlistItemCount={wishlistCount}
+          isLoggedIn={isLoggedIn}
+          userName={userName}
+        />
+      </div>
+      
+      <div className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
+        <HeroCarousel />
+      </div>
       
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-6">
-          <FilterSidebar
-            onFiltersChange={handleFiltersChange}
-            productCount={filteredProducts.length}
-          />
+          <div className="animate-fade-in-up parallax-element" style={{animationDelay: '0.4s'}}>
+            <FilterSidebar
+              onFiltersChange={handleFiltersChange}
+              productCount={filteredProducts.length}
+            />
+          </div>
           
           <div className="flex-1">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-display font-bold text-foreground">
+                <h2 className="text-2xl font-display font-bold text-foreground text-gradient animate-glow-pulse">
                   {searchQuery ? `Search results for "${searchQuery}"` : 'Featured Products'}
                 </h2>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 animate-fade-in-up" style={{animationDelay: '0.6s'}}>
+                  <span className="text-sm text-muted-foreground animate-float">
                     {filteredProducts.length} products found
                   </span>
                   <button
                     onClick={() => setCurrentView('seller')}
-                    className="text-sm text-primary hover:text-primary/80 underline"
+                    className="text-sm text-primary hover:text-primary/80 underline morphing-button px-3 py-1 rounded"
                   >
                     Seller Dashboard
                   </button>
@@ -336,11 +396,20 @@ export default function ECommercePage() {
               </div>
             </div>
             
-            <ProductGrid
-              products={filteredProducts}
-              loading={isLoading}
-            />
+            <div className="stagger-animation">
+              <ProductGrid
+                products={filteredProducts}
+                loading={isLoading}
+              />
+            </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Floating action elements */}
+      <div className="fixed bottom-8 right-8 animate-float z-50">
+        <div className="w-12 h-12 bg-gradient-to-r from-primary to-accent rounded-full animate-pulse-glow cursor-pointer hover-lift flex items-center justify-center">
+          <span className="text-white text-lg">💬</span>
         </div>
       </div>
     </div>

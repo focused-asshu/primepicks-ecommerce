@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { GameCursor } from '@/components/game-ui/cursor-effects'
+import { GameIntroSequence } from '@/components/game-ui/intro-sequence'
 import ECommerceNavbar from '@/components/ecommerce/ecommerce-navbar'
 import HeroCarousel from '@/components/ecommerce/hero-carousel'
 import ProductGrid from '@/components/ecommerce/product-grid'
@@ -43,6 +45,7 @@ interface FilterState {
 }
 
 export default function ECommercePage() {
+  const [showIntro, setShowIntro] = useState(true)
   const [currentView, setCurrentView] = useState<'browse' | 'checkout' | 'seller'>('browse')
   const [cartItems, setCartItems] = useState<CartItem[]>([
     {
@@ -152,51 +155,13 @@ export default function ECommercePage() {
     setMounted(true)
     setFilteredProducts(sampleProducts)
     
-    // Create animated particles
-    const createParticles = () => {
-      const container = document.querySelector('.particle-container')
-      if (!container) return
-      
-      for (let i = 0; i < 20; i++) {
-        const particle = document.createElement('div')
-        particle.className = 'particle'
-        particle.style.left = Math.random() * 100 + '%'
-        particle.style.animationDelay = Math.random() * 4 + 's'
-        particle.style.animationDuration = (3 + Math.random() * 2) + 's'
-        container.appendChild(particle)
-      }
-    }
+    // Auto-hide intro after 8 seconds if user doesn't interact
+    const introTimer = setTimeout(() => {
+      setShowIntro(false)
+    }, 8000)
     
-    const timer = setTimeout(createParticles, 1000)
-    return () => clearTimeout(timer)
+    return () => clearTimeout(introTimer)
   }, [])
-
-  // Mouse parallax effect
-  useEffect(() => {
-    if (!mounted) return
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      const elements = document.querySelectorAll('.parallax-element')
-      const mouseX = e.clientX
-      const mouseY = e.clientY
-      const centerX = window.innerWidth / 2
-      const centerY = window.innerHeight / 2
-      
-      elements.forEach((element) => {
-        const rect = element.getBoundingClientRect()
-        const elementCenterX = rect.left + rect.width / 2
-        const elementCenterY = rect.top + rect.height / 2
-        
-        const deltaX = (mouseX - elementCenterX) * 0.02
-        const deltaY = (mouseY - elementCenterY) * 0.02
-        
-        ;(element as HTMLElement).style.transform = `translate(${deltaX}px, ${deltaY}px)`
-      })
-    }
-    
-    document.addEventListener('mousemove', handleMouseMove)
-    return () => document.removeEventListener('mousemove', handleMouseMove)
-  }, [mounted])
 
   const handleSearch = (query: string, category?: string) => {
     setSearchQuery(query)
@@ -307,111 +272,198 @@ export default function ECommercePage() {
     console.log('Settings change:', setting, value)
   }
 
+  if (showIntro) {
+    return (
+      <>
+        <GameCursor />
+        <GameIntroSequence />
+      </>
+    )
+  }
+
   if (currentView === 'seller') {
     return (
-      <div className="animate-fade-in-up">
-        <SellerDashboard
-          onNavigate={handleSellerNavigation}
-          onProductAction={handleProductAction}
-          onOrderAction={handleOrderAction}
-          onSettingsChange={handleSettingsChange}
-        />
-      </div>
+      <>
+        <GameCursor />
+        <div className="animate-fade-in-up">
+          <SellerDashboard
+            onNavigate={handleSellerNavigation}
+            onProductAction={handleProductAction}
+            onOrderAction={handleOrderAction}
+            onSettingsChange={handleSettingsChange}
+          />
+        </div>
+      </>
     )
   }
 
   if (currentView === 'checkout') {
     return (
-      <div className="min-h-screen bg-background animate-slide-up">
-        <div className="particle-container"></div>
-        <ECommerceNavbar
-          onSearchSubmit={handleSearch}
-          onCartClick={handleCartClick}
-          onWishlistClick={handleWishlistClick}
-          onAccountClick={handleAccountClick}
-          cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-          wishlistItemCount={wishlistCount}
-          isLoggedIn={isLoggedIn}
-          userName={userName}
-        />
-        <div className="animate-scale-in">
-          <CheckoutFlow
-            cartItems={cartItems}
-            onUpdateQuantity={handleUpdateQuantity}
-            onRemoveItem={handleRemoveItem}
-            onCompleteOrder={handleCompleteOrder}
+      <>
+        <GameCursor />
+        <div className="min-h-screen bg-background animate-slide-up relative overflow-hidden">
+          {/* Advanced Background Effects */}
+          <div className="fixed inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse" />
+          </div>
+          
+          <ECommerceNavbar
+            onSearchSubmit={handleSearch}
+            onCartClick={handleCartClick}
+            onWishlistClick={handleWishlistClick}
+            onAccountClick={handleAccountClick}
+            cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+            wishlistItemCount={wishlistCount}
+            isLoggedIn={isLoggedIn}
+            userName={userName}
           />
+          <div className="animate-scale-in relative z-10">
+            <CheckoutFlow
+              cartItems={cartItems}
+              onUpdateQuantity={handleUpdateQuantity}
+              onRemoveItem={handleRemoveItem}
+              onCompleteOrder={handleCompleteOrder}
+            />
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      <div className="particle-container"></div>
-      
-      <div className="animate-slide-up">
-        <ECommerceNavbar
-          onSearchSubmit={handleSearch}
-          onCartClick={handleCartClick}
-          onWishlistClick={handleWishlistClick}
-          onAccountClick={handleAccountClick}
-          cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-          wishlistItemCount={wishlistCount}
-          isLoggedIn={isLoggedIn}
-          userName={userName}
-        />
-      </div>
-      
-      <div className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-        <HeroCarousel />
-      </div>
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-6">
-          <div className="animate-fade-in-up parallax-element" style={{animationDelay: '0.4s'}}>
-            <FilterSidebar
-              onFiltersChange={handleFiltersChange}
-              productCount={filteredProducts.length}
-            />
+    <>
+      <GameCursor />
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        {/* Enhanced Background Effects */}
+        <div className="fixed inset-0 pointer-events-none">
+          {/* Animated Gradient Meshes */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+          <div className="absolute top-0 left-0 w-full h-full">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
+            <div className="absolute bottom-1/4 left-3/4 w-64 h-64 bg-secondary/10 rounded-full blur-2xl animate-pulse" style={{animationDelay: '2s'}} />
           </div>
           
-          <div className="flex-1">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-display font-bold text-foreground text-gradient animate-glow-pulse">
-                  {searchQuery ? `Search results for "${searchQuery}"` : 'Featured Products'}
-                </h2>
-                <div className="flex items-center gap-4 animate-fade-in-up" style={{animationDelay: '0.6s'}}>
-                  <span className="text-sm text-muted-foreground animate-float">
-                    {filteredProducts.length} products found
-                  </span>
-                  <button
-                    onClick={() => setCurrentView('seller')}
-                    className="text-sm text-primary hover:text-primary/80 underline morphing-button px-3 py-1 rounded"
-                  >
-                    Seller Dashboard
-                  </button>
-                </div>
+          {/* Floating Geometric Shapes */}
+          <div className="absolute inset-0">
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute opacity-20"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animation: `float ${3 + Math.random() * 2}s ease-in-out infinite`,
+                  animationDelay: `${Math.random() * 2}s`
+                }}
+              >
+                <div className="w-2 h-2 bg-primary/30 rotate-45" />
               </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="animate-slide-up relative z-10">
+          <ECommerceNavbar
+            onSearchSubmit={handleSearch}
+            onCartClick={handleCartClick}
+            onWishlistClick={handleWishlistClick}
+            onAccountClick={handleAccountClick}
+            cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+            wishlistItemCount={wishlistCount}
+            isLoggedIn={isLoggedIn}
+            userName={userName}
+          />
+        </div>
+        
+        <div className="animate-fade-in-up relative z-10" style={{animationDelay: '0.2s'}}>
+          <HeroCarousel />
+        </div>
+        
+        <div className="container mx-auto px-4 py-8 relative z-10">
+          <div className="flex gap-6">
+            <div className="animate-fade-in-up parallax-element" style={{animationDelay: '0.4s'}}>
+              <FilterSidebar
+                onFiltersChange={handleFiltersChange}
+                productCount={filteredProducts.length}
+              />
             </div>
             
-            <div className="stagger-animation">
-              <ProductGrid
-                products={filteredProducts}
-                loading={isLoading}
-              />
+            <div className="flex-1">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-display font-bold text-foreground text-gradient animate-glow-pulse">
+                    {searchQuery ? `Search results for "${searchQuery}"` : 'Featured Products'}
+                  </h2>
+                  <div className="flex items-center gap-4 animate-fade-in-up" style={{animationDelay: '0.6s'}}>
+                    <span className="text-sm text-muted-foreground animate-float">
+                      {filteredProducts.length} products found
+                    </span>
+                    <button
+                      onClick={() => setCurrentView('seller')}
+                      className="text-sm text-primary hover:text-primary/80 underline morphing-button px-3 py-1 rounded transition-all duration-300 hover:bg-primary/10"
+                    >
+                      Seller Dashboard
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="stagger-animation">
+                <ProductGrid
+                  products={filteredProducts}
+                  loading={isLoading}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Enhanced Floating Action Elements */}
+        <div className="fixed bottom-8 right-8 animate-float z-50">
+          <div className="relative group cursor-pointer">
+            <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full animate-pulse-glow hover-lift flex items-center justify-center transition-all duration-500 group-hover:scale-110">
+              <span className="text-white text-2xl">💬</span>
+            </div>
+            {/* Orbiting particles around the chat button */}
+            <div className="absolute inset-0 pointer-events-none">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 bg-primary/50 rounded-full"
+                  style={{
+                    animation: `float ${2 + i * 0.5}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.5}s`,
+                    left: '50%',
+                    top: '50%',
+                    transformOrigin: `${40 + i * 5}px 0px`
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Gaming UI Elements */}
+        <div className="fixed bottom-8 left-8 z-50">
+          <div className="flex flex-col gap-2 text-xs text-muted-foreground font-mono bg-card/20 backdrop-blur-sm p-3 rounded-lg border border-primary/20">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span>SYSTEM ONLINE</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}} />
+              <span>PRODUCTS: {filteredProducts.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '1s'}} />
+              <span>CART: {cartItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Floating action elements */}
-      <div className="fixed bottom-8 right-8 animate-float z-50">
-        <div className="w-12 h-12 bg-gradient-to-r from-primary to-accent rounded-full animate-pulse-glow cursor-pointer hover-lift flex items-center justify-center">
-          <span className="text-white text-lg">💬</span>
-        </div>
-      </div>
-    </div>
+    </>
   )
 }
